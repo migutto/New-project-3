@@ -3,16 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Kalkulator EZS - ćwiczenia 3 i 4</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>EZS</title>
+    <link rel="stylesheet" href="styles.css?v=20260509-4">
   </head>
   <body>
     <header class="app-header">
       <div>
-        <p class="eyebrow">EZS - kalkulator sprawozdania</p>
-        <h1>Kalkulator ćwiczeń 3 i 4</h1>
+        <p class="eyebrow">Kalkulator sprawozdania</p>
+        <h1>EZS</h1>
       </div>
-      <button class="print-button" type="button" id="printButton">Drukuj / zapisz PDF</button>
+      <div class="header-actions">
+        <button class="print-button" type="button" id="printButton">Drukuj / zapisz PDF</button>
+        <button class="secondary-button" type="button" id="clearButton">Wyczyść dane</button>
+      </div>
     </header>
 
     <nav class="tabs" aria-label="Wybierz ćwiczenie">
@@ -50,17 +53,19 @@
             </tbody>
           </table>
 
+          <p class="print-note">Dane są automatycznie zapisywane w tej przeglądarce. Drukowana jest aktualnie otwarta zakładka.</p>
+
           <h2>Azot azotanowy (III)</h2>
           <p class="method">Metoda spektrofotometryczna</p>
 
           <div class="controls-grid">
-            <label>Stężenie roztworu wzorcowego roboczego x [mg/cm3]
+            <label>Stężenie roztworu wzorcowego roboczego x [mg/cm³]
               <input id="no2StandardX" type="text" inputmode="decimal" placeholder="np. 0,001" data-store="no2StandardX">
             </label>
-            <label>Objętość kolby V [dm3]
+            <label>Objętość kolby V [dm³]
               <input id="no2FlaskV" type="text" inputmode="decimal" value="0,100" data-store="no2FlaskV">
             </label>
-            <label>Objętość próby P1 [cm3]
+            <label>Objętość próby P1 [cm³]
               <input id="no2SampleVolume" type="text" inputmode="decimal" value="10" data-store="no2SampleVolume">
             </label>
           </div>
@@ -70,12 +75,14 @@
               <thead>
                 <tr>
                   <th rowspan="2">Lp.</th>
-                  <th colspan="2" rowspan="2">Przedmiot analizy</th>
+                  <th rowspan="2">Przedmiot analizy</th>
+                  <th rowspan="2">Nr wzorca</th>
+                  <th rowspan="2">a [cm³]</th>
                   <th rowspan="2">Absorbancja</th>
                   <th>cNO<sub>2</sub><sup>-</sup></th>
                   <th rowspan="2">Regresja</th>
                 </tr>
-                <tr><th>mg/dm3</th></tr>
+                <tr><th>mg/dm³</th></tr>
               </thead>
               <tbody id="standardsBody"></tbody>
             </table>
@@ -88,7 +95,7 @@
                   <th rowspan="2">Lp.</th>
                   <th rowspan="2">Przedmiot analizy</th>
                   <th rowspan="2">Absorbancja</th>
-                  <th colspan="2">cNO<sub>2</sub><sup>-</sup> [mg/dm3]</th>
+                  <th colspan="2">cNO<sub>2</sub><sup>-</sup> [mg/dm³]</th>
                 </tr>
                 <tr>
                   <th>z krzywej wzorcowej</th>
@@ -118,6 +125,34 @@
           <section class="explanation">
             <h3>Obliczenia</h3>
             <div id="exercise3Calculations"></div>
+          </section>
+
+          <section class="explanation">
+            <h3>Normy do interpretacji</h3>
+            <div class="table-wrap compact">
+              <table class="report-table standards-table">
+                <thead>
+                  <tr>
+                    <th>Parametr</th>
+                    <th>Jednostka</th>
+                    <th>Klasa 1</th>
+                    <th>Klasa 2</th>
+                    <th>Klasa 3</th>
+                    <th>Woda do picia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Azotany(III)</td>
+                    <td>mg NO<sub>2</sub><sup>-</sup>/dm³</td>
+                    <td>≤ 0,02</td>
+                    <td>≤ 0,03</td>
+                    <td>≤ 0,06</td>
+                    <td>≤ 0,5</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section class="explanation">
@@ -156,12 +191,14 @@
             </tbody>
           </table>
 
+          <p class="print-note">Dane są automatycznie zapisywane w tej przeglądarce. Drukowana jest aktualnie otwarta zakładka.</p>
+
           <h2>Twardość wody</h2>
           <div class="controls-grid">
-            <label>Stężenie titranta c EDTA [mol/dm3]
+            <label>Stężenie titranta c EDTA [mol/dm³]
               <input id="edtaConcentration" type="text" inputmode="decimal" value="0,01" data-store="edtaConcentration">
             </label>
-            <label>Objętość próbki V [cm3]
+            <label>Objętość próbki V [cm³]
               <select id="sampleVolumeHardness" data-store="sampleVolumeHardness">
                 <option value="50">50</option>
                 <option value="20">20</option>
@@ -175,15 +212,15 @@
                 <tr>
                   <th rowspan="2">Lp.</th>
                   <th rowspan="2">Przedmiot analizy</th>
-                  <th colspan="3">VEDTA [cm3]</th>
+                  <th colspan="3">VEDTA [cm³]</th>
                   <th colspan="3">Twardość</th>
                 </tr>
                 <tr>
                   <th>pomiar 1</th>
                   <th>pomiar 2</th>
                   <th>średnia</th>
-                  <th>mmol/dm3</th>
-                  <th>mgCaCO<sub>3</sub>/dm3</th>
+                  <th>mmol/dm³</th>
+                  <th>mg CaCO<sub>3</sub>/dm³</th>
                   <th>°n</th>
                 </tr>
               </thead>
@@ -198,14 +235,14 @@
                 <tr>
                   <th rowspan="2">Lp.</th>
                   <th rowspan="2">Przedmiot analizy</th>
-                  <th colspan="3">VEDTA [cm3]</th>
+                  <th colspan="3">VEDTA [cm³]</th>
                   <th>CCa<sup>2+</sup></th>
                 </tr>
                 <tr>
                   <th>pomiar 1</th>
                   <th>pomiar 2</th>
                   <th>średnia</th>
-                  <th>mg/dm3</th>
+                  <th>mg/dm³</th>
                 </tr>
               </thead>
               <tbody id="calciumBody"></tbody>
@@ -219,23 +256,67 @@
                 <tr>
                   <th rowspan="2">Lp.</th>
                   <th rowspan="2">Przedmiot analizy</th>
-                  <th colspan="3">VEDTA [cm3]</th>
+                  <th colspan="3">VEDTA [cm³]</th>
                   <th>CMg<sup>2+</sup></th>
                 </tr>
                 <tr>
                   <th>pomiar 1</th>
                   <th>pomiar 2</th>
                   <th>średnia</th>
-                  <th>mg/dm3</th>
+                  <th>mg/dm³</th>
                 </tr>
               </thead>
               <tbody id="magnesiumBody"></tbody>
             </table>
           </div>
 
+          <h2>Wartości z etykiet</h2>
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th>Przedmiot analizy</th>
+                  <th>Ca<sup>2+</sup> z etykiety [mg/dm³]</th>
+                  <th>Mg<sup>2+</sup> z etykiety [mg/dm³]</th>
+                  <th>Twardość z etykiety [mg CaCO<sub>3</sub>/dm³]</th>
+                  <th>Różnica oznaczenie - etykieta</th>
+                </tr>
+              </thead>
+              <tbody id="labelValuesBody"></tbody>
+            </table>
+          </div>
+
           <section class="explanation">
             <h3>Obliczenia</h3>
             <div id="exercise4Calculations"></div>
+          </section>
+
+          <section class="explanation">
+            <h3>Normy do interpretacji</h3>
+            <div class="table-wrap compact">
+              <table class="report-table standards-table">
+                <thead>
+                  <tr>
+                    <th>Parametr</th>
+                    <th>Jednostka</th>
+                    <th>Klasa 1</th>
+                    <th>Klasa 2</th>
+                    <th>Klasa 3</th>
+                    <th>Woda do picia</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Twardość</td>
+                    <td>mg CaCO<sub>3</sub>/dm³</td>
+                    <td>≤ 350</td>
+                    <td>≤ 550</td>
+                    <td>≤ 700</td>
+                    <td>≤ 500</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
           </section>
 
           <section class="explanation">
@@ -246,6 +327,6 @@
       </section>
     </main>
 
-    <script src="app.js"></script>
+    <script src="app.js?v=20260509-4"></script>
   </body>
 </html>

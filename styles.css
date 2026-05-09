@@ -72,6 +72,7 @@ select {
 }
 
 .print-button,
+.secondary-button,
 .tab-button {
   min-height: 40px;
   border: 1px solid var(--accent);
@@ -83,6 +84,19 @@ select {
 
 .print-button {
   padding: 8px 14px;
+}
+
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.secondary-button {
+  padding: 8px 14px;
+  border-color: var(--accent-2);
+  color: var(--accent-2);
 }
 
 .tabs {
@@ -123,6 +137,14 @@ main {
 
 .method,
 .note {
+  color: var(--muted);
+}
+
+.print-note {
+  margin: 0 0 18px;
+  padding: 10px 12px;
+  border-left: 4px solid var(--accent);
+  background: #f4faf7;
   color: var(--muted);
 }
 
@@ -167,6 +189,10 @@ select:focus {
   margin: 14px 0 22px;
 }
 
+.table-wrap.compact {
+  margin-bottom: 0;
+}
+
 .report-table {
   width: 100%;
   min-width: 720px;
@@ -177,6 +203,10 @@ select:focus {
 
 .identity-table {
   min-width: 620px;
+}
+
+.standards-table {
+  min-width: 640px;
 }
 
 .report-table th,
@@ -253,6 +283,12 @@ canvas {
 
 .calc-item.warning {
   border-left-color: var(--accent-2);
+  color: #6e2c18;
+}
+
+.invalid-input {
+  border-color: var(--accent-2);
+  background: #fff5f0;
 }
 
 .formula {
@@ -290,6 +326,14 @@ canvas {
   .inline-fields {
     grid-template-columns: 1fr;
   }
+
+  .header-actions {
+    justify-content: stretch;
+  }
+
+  .header-actions button {
+    width: 100%;
+  }
 }
 
 @media print {
@@ -299,7 +343,8 @@ canvas {
 
   .app-header,
   .tabs,
-  .print-button {
+  .print-button,
+  .secondary-button {
     display: none;
   }
 

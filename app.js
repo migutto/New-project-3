@@ -9,7 +9,7 @@ const qsa = (selector, root = document) => Array.from(root.querySelectorAll(sele
 
 function parseNumber(value) {
   if (typeof value !== "string") return Number.NaN;
-  const normalized = value.trim().replace(/\s/g, "").replace(",", ".");
+  const normalized = value.trim().replace(/\s/g, "").replace(/,/g, ".");
   if (!normalized) return Number.NaN;
   return Number(normalized);
 }
@@ -57,19 +57,25 @@ function createComputedCell(id) {
   return td;
 }
 
+function setInvalid(selector, invalid) {
+  const element = qs(selector);
+  if (element) element.classList.toggle("invalid-input", invalid);
+}
+
 function renderExercise3Table() {
   const body = qs("#standardsBody");
   standardVolumes.forEach((volume, index) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${index + 1}</td>
-      <td>${index === 0 ? "Wzorcowe" : ""}</td>
-      <td>${index + 1}<br><small>a = ${formatInputValue(volume)} cm3</small></td>
+      <td>${index === 0 ? "Wzorcowe - ślepa próba" : "Wzorcowe"}</td>
+      <td>${index + 1}</td>
+      <td>${formatInputValue(volume)}</td>
       <td></td>
       <td class="computed" id="standardConcentration${index}">-</td>
       <td class="check-cell"></td>
     `;
-    const absorbanceCell = tr.children[3];
+    const absorbanceCell = tr.children[4];
     absorbanceCell.appendChild(createInput(`standardAbsorbance${index}`, `standardAbsorbance${index}`));
 
     const checkbox = document.createElement("input");
@@ -77,7 +83,7 @@ function renderExercise3Table() {
     checkbox.type = "checkbox";
     checkbox.checked = true;
     checkbox.dataset.store = `standardIncluded${index}`;
-    tr.children[5].appendChild(checkbox);
+    tr.children[6].appendChild(checkbox);
     body.appendChild(tr);
   });
 }
@@ -86,6 +92,7 @@ function renderExercise4Tables() {
   renderHardnessRows();
   renderIonRows("calciumBody", "calcium", "CCa");
   renderIonRows("magnesiumBody", "magnesium", "CMg");
+  renderLabelRows();
 }
 
 function renderHardnessRows() {
@@ -112,6 +119,19 @@ function renderIonRows(bodyId, prefix, resultPrefix) {
     tr.children[3].appendChild(createInput(`${water.id}-${prefix}-2`, `${water.id}-${prefix}-2`));
     tr.appendChild(createComputedCell(`${water.id}-${prefix}-avg`));
     tr.appendChild(createComputedCell(`${water.id}-${resultPrefix}`));
+    body.appendChild(tr);
+  });
+}
+
+function renderLabelRows() {
+  const body = qs("#labelValuesBody");
+  waters.forEach((water) => {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `<td>${water.name}</td><td></td><td></td>`;
+    tr.children[1].appendChild(createInput(`${water.id}-label-ca`, `${water.id}-label-ca`));
+    tr.children[2].appendChild(createInput(`${water.id}-label-mg`, `${water.id}-label-mg`));
+    tr.appendChild(createComputedCell(`${water.id}-label-hardness`));
+    tr.appendChild(createComputedCell(`${water.id}-label-diff`));
     body.appendChild(tr);
   });
 }
@@ -153,6 +173,7 @@ function linearRegression(points) {
 
 function calculateExercise3() {
   const data = getExercise3Data();
+  markExercise3Inputs(data);
   data.standards.forEach((row) => {
     qs(`#standardConcentration${row.index}`).textContent = formatNumber(row.concentration, 4);
   });
@@ -167,20 +188,62 @@ function calculateExercise3() {
     sampleCurve = (data.sampleAbsorbance - regression.intercept) / regression.slope;
   }
   const sampleDiluted = Number.isFinite(sampleCurve) && Number.isFinite(data.dilutionFactor) ? sampleCurve * data.dilutionFactor : Number.NaN;
+  const validation = validateExercise3(data, regressionPoints, sampleCurve, sampleDiluted);
 
   qs("#sampleCurveConcentration").textContent = formatNumber(sampleCurve, 4);
   qs("#sampleDilutedConcentration").textContent = formatNumber(sampleDiluted, 4);
-  renderExercise3Calculations(data, regression, sampleCurve, sampleDiluted);
-  renderExercise3Interpretation(sampleDiluted);
+  renderExercise3Calculations(data, regression, sampleCurve, sampleDiluted, validation);
+  renderExercise3Interpretation(sampleDiluted, validation);
   drawChart(data, regression, sampleCurve);
 }
 
-function renderExercise3Calculations(data, regression, sampleCurve, sampleDiluted) {
+function markExercise3Inputs(data) {
+  setInvalid("#no2StandardX", Number.isFinite(data.x) && data.x < 0);
+  setInvalid("#no2FlaskV", Number.isFinite(data.flaskVolume) && data.flaskVolume <= 0);
+  setInvalid("#no2SampleVolume", Number.isFinite(data.sampleVolume) && data.sampleVolume <= 0);
+  setInvalid("#sampleAbsorbance", Number.isFinite(data.sampleAbsorbance) && data.sampleAbsorbance < 0);
+  data.standards.forEach((row) => {
+    setInvalid(`#standardAbsorbance${row.index}`, Number.isFinite(row.absorbance) && row.absorbance < 0);
+  });
+}
+
+function validateExercise3(data, regressionPoints, sampleCurve, sampleDiluted) {
+  const warnings = [];
+  if (Number.isFinite(data.x) && data.x < 0) warnings.push("Stężenie roztworu wzorcowego x nie może być ujemne.");
+  if (Number.isFinite(data.flaskVolume) && data.flaskVolume <= 0) warnings.push("Objętość kolby V musi być większa od zera.");
+  if (Number.isFinite(data.sampleVolume) && data.sampleVolume <= 0) warnings.push("Objętość próby P1 musi być większa od zera.");
+  data.standards.forEach((row) => {
+    if (Number.isFinite(row.absorbance) && row.absorbance < 0) {
+      warnings.push(`Wzorzec ${row.index + 1}: absorbancja nie powinna być ujemna.`);
+    }
+  });
+  if (Number.isFinite(data.sampleAbsorbance) && data.sampleAbsorbance < 0) warnings.push("Absorbancja próby P1 nie powinna być ujemna.");
+  if (regressionPoints.length > 0 && regressionPoints.length < 2) {
+    warnings.push("Do wyznaczenia krzywej wzorcowej potrzeba co najmniej dwóch punktów.");
+  } else if (regressionPoints.length >= 2 && regressionPoints.length < standardVolumes.length) {
+    warnings.push("Do sprawozdania zaleca się użycie pełnej serii wzorców; wynik z mniejszej liczby punktów wymaga ostrożności.");
+  }
+  const xs = regressionPoints.map((point) => point.x);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const outOfRange = Number.isFinite(sampleCurve) && xs.length >= 2 && (sampleCurve < minX || sampleCurve > maxX);
+  const negativeResult = (Number.isFinite(sampleCurve) && sampleCurve < 0) || (Number.isFinite(sampleDiluted) && sampleDiluted < 0);
+  if (outOfRange) warnings.push("Wynik P1 znajduje się poza zakresem krzywej wzorcowej. To ekstrapolacja, więc wynik trzeba traktować ostrożnie.");
+  if (negativeResult) warnings.push("Wynik ujemny nie jest rzeczywistym stężeniem. Sprawdź ślepą próbę, absorbancję P1 i dane wzorcowe.");
+  return { warnings, outOfRange, negativeResult };
+}
+
+function renderWarnings(warnings) {
+  if (!warnings.length) return "";
+  return warnings.map((warning) => `<div class="calc-item warning">${warning}</div>`).join("");
+}
+
+function renderExercise3Calculations(data, regression, sampleCurve, sampleDiluted, validation) {
   const container = qs("#exercise3Calculations");
   const firstRows = data.standards.map((row) => `
     <div class="calc-item">
-      Wzorzec ${row.index + 1}: a = ${formatInputValue(row.volume)} cm3.
-      <span class="formula">cNO2- = a * x / V = ${formatInputValue(row.volume)} * ${formatNumber(data.x, 6)} / ${formatNumber(data.flaskVolume, 3)} = ${formatNumber(row.concentration, 4)} mg/dm3</span>
+      Wzorzec ${row.index + 1}${row.index === 0 ? " - ślepa próba" : ""}: a = ${formatInputValue(row.volume)} cm³.
+      <span class="formula">cNO₂⁻ = a * x / V = ${formatInputValue(row.volume)} * ${formatNumber(data.x, 6)} / ${formatNumber(data.flaskVolume, 3)} = ${formatNumber(row.concentration, 4)} mg/dm³</span>
     </div>
   `).join("");
 
@@ -194,34 +257,39 @@ function renderExercise3Calculations(data, regression, sampleCurve, sampleDilute
   const sampleText = Number.isFinite(sampleCurve)
     ? `<div class="calc-item">
         Próba P1 z krzywej wzorcowej:
-        <span class="formula">c = (A(P1) - b) / m = (${formatNumber(data.sampleAbsorbance, 4)} - ${formatNumber(regression.intercept, 5)}) / ${formatNumber(regression.slope, 5)} = ${formatNumber(sampleCurve, 4)} mg/dm3</span>
-        <span class="formula">Po rozcieńczeniu: ${formatNumber(sampleCurve, 4)} * ${formatNumber(data.dilutionFactor, 2)} = ${formatNumber(sampleDiluted, 4)} mg/dm3</span>
+        <span class="formula">c = (A(P1) - b) / m = (${formatNumber(data.sampleAbsorbance, 4)} - ${formatNumber(regression.intercept, 5)}) / ${formatNumber(regression.slope, 5)} = ${formatNumber(sampleCurve, 4)} mg/dm³</span>
+        <span class="formula">Po rozcieńczeniu: ${formatNumber(sampleCurve, 4)} * ${formatNumber(data.dilutionFactor, 2)} = ${formatNumber(sampleDiluted, 4)} mg/dm³</span>
       </div>`
     : `<div class="calc-item warning">Wpisz absorbancję P1 oraz dane wzorcowe, aby obliczyć wynik próby.</div>`;
 
-  container.innerHTML = `<div class="calc-list">${firstRows}${regressionText}${sampleText}</div>`;
+  container.innerHTML = `<div class="calc-list">${renderWarnings(validation.warnings)}${firstRows}${regressionText}${sampleText}</div>`;
 }
 
 function classifyNo2(value) {
   if (!Number.isFinite(value)) return null;
   const drinking = value <= 0.5;
-  let waterClass = "poza 3 klasa";
-  if (value <= 0.02) waterClass = "1 klasa";
-  else if (value <= 0.03) waterClass = "2 klasa";
-  else if (value <= 0.06) waterClass = "3 klasa";
+  let waterClass = "poza klasą 3";
+  if (value <= 0.02) waterClass = "klasa 1";
+  else if (value <= 0.03) waterClass = "klasa 2";
+  else if (value <= 0.06) waterClass = "klasa 3";
   return { drinking, waterClass };
 }
 
-function renderExercise3Interpretation(value) {
+function renderExercise3Interpretation(value, validation) {
   const container = qs("#exercise3Interpretation");
+  if (validation.negativeResult) {
+    container.innerHTML = `<p><span class="result-warn">Nie wykonano klasyfikacji.</span> Wynik ujemny nie powinien być interpretowany jako rzeczywiste stężenie.</p>`;
+    return;
+  }
   const result = classifyNo2(value);
   if (!result) {
-    container.innerHTML = `<p>Po obliczeniu wyniku końcowego pojawi się automatyczna interpretacja według progów: 0,02; 0,03; 0,06 mg/dm3 oraz 0,5 mg/dm3 dla wody do picia.</p>`;
+    container.innerHTML = `<p>Po obliczeniu wyniku końcowego pojawi się automatyczna interpretacja według progów: 0,02; 0,03; 0,06 mg/dm³ oraz 0,5 mg/dm³ dla wody do picia.</p>`;
     return;
   }
   container.innerHTML = `
-    <p>Badana próba ze względu na zawartość azotanów(III) mierzonych metodą spektrofotometryczną należy do <span class="result-ok">${result.waterClass}</span> czystości wód.</p>
-    <p>Wynik ${formatNumber(value, 4)} mg/dm3 ${result.drinking ? '<span class="result-ok">spełnia</span>' : '<span class="result-warn">nie spełnia</span>'} próg dla wody do picia wynoszący 0,5 mg/dm3.</p>
+    <p>Badana próba ze względu na zawartość azotanów(III) mierzonych metodą spektrofotometryczną: <span class="result-ok">${result.waterClass}</span>.</p>
+    ${validation.outOfRange ? '<p><span class="result-warn">Uwaga:</span> wynik P1 jest poza zakresem krzywej wzorcowej, więc jest ekstrapolowany.</p>' : ""}
+    <p>Wynik ${formatNumber(value, 4)} mg/dm³ ${result.drinking ? '<span class="result-ok">mieści się</span>' : '<span class="result-warn">nie mieści się</span>'} w limicie dla wody do picia wynoszącym 0,5 mg/dm³.</p>
   `;
 }
 
@@ -259,7 +327,7 @@ function drawChart(data, regression, sampleCurve) {
   ctx.fillStyle = "#17211c";
   ctx.font = "16px Arial";
   ctx.fillText("Absorbancja", 14, margin.top + 16);
-  ctx.fillText("cNO2- [mg/dm3]", margin.left + plotW / 2 - 58, height - 18);
+  ctx.fillText("cNO₂⁻ [mg/dm³]", margin.left + plotW / 2 - 58, height - 18);
 
   ctx.font = "13px Arial";
   ctx.fillStyle = "#5d6862";
@@ -324,6 +392,9 @@ function average(values) {
 function calculateExercise4() {
   const c = parseNumber(qs("#edtaConcentration").value);
   const v = parseNumber(qs("#sampleVolumeHardness").value);
+  const warnings = validateExercise4Globals(c, v);
+  setInvalid("#edtaConcentration", Number.isFinite(c) && c <= 0);
+  setInvalid("#sampleVolumeHardness", Number.isFinite(v) && v <= 0);
   const rows = waters.map((water) => {
     const hardnessValues = [
       parseNumber(qs(`#${water.id}-hardness-1`).value),
@@ -337,6 +408,21 @@ function calculateExercise4() {
       parseNumber(qs(`#${water.id}-magnesium-1`).value),
       parseNumber(qs(`#${water.id}-magnesium-2`).value),
     ];
+    const labelCa = parseNumber(qs(`#${water.id}-label-ca`).value);
+    const labelMg = parseNumber(qs(`#${water.id}-label-mg`).value);
+    [...hardnessValues, ...calciumValues, ...magnesiumValues].forEach((value, idx) => {
+      const ids = [
+        `${water.id}-hardness-1`,
+        `${water.id}-hardness-2`,
+        `${water.id}-calcium-1`,
+        `${water.id}-calcium-2`,
+        `${water.id}-magnesium-1`,
+        `${water.id}-magnesium-2`,
+      ];
+      setInvalid(`#${ids[idx]}`, Number.isFinite(value) && value < 0);
+    });
+    setInvalid(`#${water.id}-label-ca`, Number.isFinite(labelCa) && labelCa < 0);
+    setInvalid(`#${water.id}-label-mg`, Number.isFinite(labelMg) && labelMg < 0);
 
     const hardnessAvg = average(hardnessValues);
     const hardnessMmol = Number.isFinite(hardnessAvg) && Number.isFinite(c) && Number.isFinite(v) && v > 0 ? hardnessAvg * c * 1000 / v : Number.NaN;
@@ -347,6 +433,14 @@ function calculateExercise4() {
     const calcium = Number.isFinite(calciumAvg) && Number.isFinite(c) && Number.isFinite(v) && v > 0 ? calciumAvg * c * 1000 * 40.1 / v : Number.NaN;
     const magnesiumAvg = average(magnesiumValues);
     const magnesium = Number.isFinite(magnesiumAvg) && Number.isFinite(c) && Number.isFinite(v) && v > 0 ? magnesiumAvg * c * 1000 * 24.3 / v : Number.NaN;
+    const labelHardness = Number.isFinite(labelCa) && Number.isFinite(labelMg) ? labelCa * 100.08 / 40.1 + labelMg * 100.08 / 24.3 : Number.NaN;
+    const labelDiff = Number.isFinite(hardnessCaco3) && Number.isFinite(labelHardness) ? hardnessCaco3 - labelHardness : Number.NaN;
+
+    warnings.push(...validateMeasurementPair(water.name, "twardość", hardnessValues));
+    warnings.push(...validateMeasurementPair(water.name, "wapń", calciumValues));
+    warnings.push(...validateMeasurementPair(water.name, "magnez", magnesiumValues));
+    if (Number.isFinite(labelCa) && labelCa < 0) warnings.push(`${water.name}: wapń z etykiety nie może być ujemny.`);
+    if (Number.isFinite(labelMg) && labelMg < 0) warnings.push(`${water.name}: magnez z etykiety nie może być ujemny.`);
 
     setCell(`${water.id}-hardness-avg`, hardnessAvg, 2);
     setCell(`${water.id}-hardness-mmol`, hardnessMmol, 3);
@@ -356,34 +450,54 @@ function calculateExercise4() {
     setCell(`${water.id}-CCa`, calcium, 2);
     setCell(`${water.id}-magnesium-avg`, magnesiumAvg, 2);
     setCell(`${water.id}-CMg`, magnesium, 2);
+    setCell(`${water.id}-label-hardness`, labelHardness, 2);
+    setCell(`${water.id}-label-diff`, labelDiff, 2);
 
-    return { water, hardnessAvg, hardnessMmol, hardnessCaco3, hardnessGerman, calciumAvg, calcium, magnesiumAvg, magnesium };
+    return { water, hardnessAvg, hardnessMmol, hardnessCaco3, hardnessGerman, calciumAvg, calcium, magnesiumAvg, magnesium, labelCa, labelMg, labelHardness, labelDiff };
   });
 
-  renderExercise4Calculations(rows, c, v);
+  renderExercise4Calculations(rows, c, v, warnings);
   renderExercise4Interpretation(rows);
+}
+
+function validateExercise4Globals(c, v) {
+  const warnings = [];
+  if (Number.isFinite(c) && c <= 0) warnings.push("Stężenie EDTA musi być większe od zera.");
+  if (Number.isFinite(v) && v <= 0) warnings.push("Objętość próbki musi być większa od zera.");
+  return warnings;
+}
+
+function validateMeasurementPair(waterName, label, values) {
+  const warnings = [];
+  const filled = values.filter(Number.isFinite);
+  if (filled.some((value) => value < 0)) warnings.push(`${waterName}: pomiar dla pozycji "${label}" nie może być ujemny.`);
+  if (filled.length === 1) warnings.push(`${waterName}: wpisano tylko jeden z dwóch pomiarów (${label}). Do sprawozdania wymagane są dwa oznaczenia.`);
+  return warnings;
 }
 
 function setCell(id, value, digits) {
   qs(`#${id}`).textContent = formatNumber(value, digits);
 }
 
-function renderExercise4Calculations(rows, c, v) {
-  const content = rows.map(({ water, hardnessAvg, hardnessMmol, hardnessCaco3, hardnessGerman, calciumAvg, calcium, magnesiumAvg, magnesium }) => `
+function renderExercise4Calculations(rows, c, v, warnings) {
+  const content = rows.map(({ water, hardnessAvg, hardnessMmol, hardnessCaco3, hardnessGerman, calciumAvg, calcium, magnesiumAvg, magnesium, labelCa, labelMg, labelHardness, labelDiff }) => `
     <div class="calc-item">
       <strong>${water.name}</strong>
-      <span class="formula">a_średnia = ${formatNumber(hardnessAvg, 2)} cm3</span>
-      <span class="formula">Two = a * c * 1000 / V = ${formatNumber(hardnessAvg, 2)} * ${formatNumber(c, 4)} * 1000 / ${formatNumber(v, 0)} = ${formatNumber(hardnessMmol, 3)} mmol/dm3</span>
-      <span class="formula">TwCaCO3 = Two * 100,08 = ${formatNumber(hardnessMmol, 3)} * 100,08 = ${formatNumber(hardnessCaco3, 2)} mg CaCO3/dm3</span>
+      <span class="formula">a_średnia = ${formatNumber(hardnessAvg, 2)} cm³</span>
+      <span class="formula">Two = a * c * 1000 / V = ${formatNumber(hardnessAvg, 2)} * ${formatNumber(c, 4)} * 1000 / ${formatNumber(v, 0)} = ${formatNumber(hardnessMmol, 3)} mmol/dm³</span>
+      <span class="formula">TwCaCO₃ = Two * 100,08 = ${formatNumber(hardnessMmol, 3)} * 100,08 = ${formatNumber(hardnessCaco3, 2)} mg CaCO₃/dm³</span>
       <span class="formula">Tw(°n) = Two * 5,61 = ${formatNumber(hardnessMmol, 3)} * 5,61 = ${formatNumber(hardnessGerman, 2)} °n</span>
-      <span class="formula">cCa2+ = V1 * c * 1000 * 40,1 / V = ${formatNumber(calciumAvg, 2)} * ${formatNumber(c, 4)} * 1000 * 40,1 / ${formatNumber(v, 0)} = ${formatNumber(calcium, 2)} mg/dm3</span>
-      <span class="formula">cMg2+ = V2 * c * 1000 * 24,3 / V = ${formatNumber(magnesiumAvg, 2)} * ${formatNumber(c, 4)} * 1000 * 24,3 / ${formatNumber(v, 0)} = ${formatNumber(magnesium, 2)} mg/dm3</span>
+      <span class="formula">cCa²⁺ = V1 * c * 1000 * 40,1 / V = ${formatNumber(calciumAvg, 2)} * ${formatNumber(c, 4)} * 1000 * 40,1 / ${formatNumber(v, 0)} = ${formatNumber(calcium, 2)} mg/dm³</span>
+      <span class="formula">cMg²⁺ = V2 * c * 1000 * 24,3 / V = ${formatNumber(magnesiumAvg, 2)} * ${formatNumber(c, 4)} * 1000 * 24,3 / ${formatNumber(v, 0)} = ${formatNumber(magnesium, 2)} mg/dm³</span>
+      <span class="formula">Twardość z etykiety = Ca * 100,08 / 40,1 + Mg * 100,08 / 24,3 = ${formatNumber(labelCa, 2)} * 100,08 / 40,1 + ${formatNumber(labelMg, 2)} * 100,08 / 24,3 = ${formatNumber(labelHardness, 2)} mg CaCO₃/dm³</span>
+      <span class="formula">Różnica oznaczenie - etykieta = ${formatNumber(hardnessCaco3, 2)} - ${formatNumber(labelHardness, 2)} = ${formatNumber(labelDiff, 2)} mg CaCO₃/dm³</span>
     </div>
   `).join("");
 
   qs("#exercise4Calculations").innerHTML = `
     <div class="calc-list">
-      <div class="calc-item">Symbole: a, V1 i V2 oznaczają średnie zużycie EDTA [cm3], c to stężenie titranta [mol/dm3], V to objętość próbki [cm3].</div>
+      ${renderWarnings(warnings)}
+      <div class="calc-item">Symbole: a, V1 i V2 oznaczają średnie zużycie EDTA [cm³], c to stężenie titranta [mol/dm³], V to objętość próbki [cm³].</div>
       ${content}
     </div>
   `;
@@ -392,10 +506,10 @@ function renderExercise4Calculations(rows, c, v) {
 function classifyHardness(value) {
   if (!Number.isFinite(value)) return null;
   const drinking = value <= 500;
-  let waterClass = "poza 3 klasa";
-  if (value <= 350) waterClass = "1 klasa";
-  else if (value <= 550) waterClass = "2 klasa";
-  else if (value <= 700) waterClass = "3 klasa";
+  let waterClass = "poza klasą 3";
+  if (value <= 350) waterClass = "klasa 1";
+  else if (value <= 550) waterClass = "klasa 2";
+  else if (value <= 700) waterClass = "klasa 3";
   return { drinking, waterClass };
 }
 
@@ -403,7 +517,7 @@ function renderExercise4Interpretation(rows) {
   const items = rows.map(({ water, hardnessCaco3 }) => {
     const result = classifyHardness(hardnessCaco3);
     if (!result) return `<p>${water.name}: wpisz pomiary twardości, aby uzyskać interpretację.</p>`;
-    return `<p>${water.name}: wynik ${formatNumber(hardnessCaco3, 2)} mg CaCO3/dm3 oznacza <span class="result-ok">${result.waterClass}</span>; woda ${result.drinking ? '<span class="result-ok">spełnia</span>' : '<span class="result-warn">nie spełnia</span>'} próg dla wody do picia 500 mg CaCO3/dm3.</p>`;
+    return `<p>${water.name}: wynik ${formatNumber(hardnessCaco3, 2)} mg CaCO₃/dm³, klasyfikacja: <span class="result-ok">${result.waterClass}</span>; woda ${result.drinking ? '<span class="result-ok">mieści się</span>' : '<span class="result-warn">nie mieści się</span>'} w limicie dla wody do picia 500 mg CaCO₃/dm³.</p>`;
   }).join("");
   qs("#exercise4Interpretation").innerHTML = items;
 }
@@ -413,6 +527,13 @@ function handleInput(event) {
   if (target.matches("input, select")) saveStoredInput(target);
   calculateExercise3();
   calculateExercise4();
+}
+
+function clearData() {
+  Object.keys(localStorage)
+    .filter((key) => key.startsWith("ezs-calc:"))
+    .forEach((key) => localStorage.removeItem(key));
+  window.location.reload();
 }
 
 function setupTabs() {
@@ -441,6 +562,7 @@ function init() {
   document.addEventListener("input", handleInput);
   document.addEventListener("change", handleInput);
   qs("#printButton").addEventListener("click", () => window.print());
+  qs("#clearButton").addEventListener("click", clearData);
   setupTabs();
   calculateExercise3();
   calculateExercise4();
