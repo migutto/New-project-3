@@ -1,0 +1,263 @@
+<!doctype html>
+<html lang="pl">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Kalkulator EZS - ćwiczenia 3 i 4</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <header class="app-header">
+      <div>
+        <p class="eyebrow">EZS - kalkulator sprawozdania</p>
+        <h1>Kalkulator ćwiczeń 3 i 4</h1>
+      </div>
+      <button class="print-button" type="button" id="printButton">Drukuj / zapisz PDF</button>
+    </header>
+
+    <nav class="tabs" aria-label="Wybierz ćwiczenie">
+      <button class="tab-button active" type="button" data-tab="exercise3">Ćwiczenie 3</button>
+      <button class="tab-button" type="button" data-tab="exercise4">Ćwiczenie 4</button>
+    </nav>
+
+    <main>
+      <section class="tab-panel active" id="exercise3">
+        <section class="sheet">
+          <table class="report-table identity-table">
+            <tbody>
+              <tr>
+                <th colspan="2">
+                  <label>Ćwiczenie nr 3<br>
+                    <input value="Związki autotroficzne w wodzie" data-store="ex3-title">
+                  </label>
+                </th>
+                <th>
+                  <label>Data:<br>
+                    <input value="11.04.2026" data-store="ex3-date">
+                  </label>
+                </th>
+              </tr>
+              <tr>
+                <th colspan="2">
+                  <div class="inline-fields">
+                    <label>Rok akademicki:<input value="2025/2026" data-store="ex3-year"></label>
+                    <label>Grupa:<input value="1" data-store="ex3-group"></label>
+                    <label>Zespół:<input value="3" data-store="ex3-team"></label>
+                  </div>
+                </th>
+                <th>Zaliczenie:</th>
+              </tr>
+              <tr><th colspan="3">SKŁAD ZESPOŁU BADAWCZEGO:</th></tr>
+              <tr><th>Lp.</th><th>Imię i nazwisko</th><th>Nr albumu</th></tr>
+              <tr><td>1.</td><td><input value="Natalia Kotarska" data-store="ex3-person-1"></td><td><input value="193040" data-store="ex3-album-1"></td></tr>
+              <tr><td>2.</td><td><input value="Jakub Warchoł" data-store="ex3-person-2"></td><td><input value="192981" data-store="ex3-album-2"></td></tr>
+              <tr><td>3.</td><td><input value="Teodor Terpiński" data-store="ex3-person-3"></td><td><input value="192957" data-store="ex3-album-3"></td></tr>
+              <tr><td>4.</td><td><input value="Jakub Podgórski" data-store="ex3-person-4"></td><td><input value="193055" data-store="ex3-album-4"></td></tr>
+            </tbody>
+          </table>
+
+          <h2>Azot azotanowy (III)</h2>
+          <p class="method">Metoda spektrofotometryczna</p>
+
+          <div class="controls-grid">
+            <label>Stężenie roztworu wzorcowego roboczego x [mg/cm3]
+              <input id="no2StandardX" type="text" inputmode="decimal" placeholder="np. 0,001" data-store="no2StandardX">
+            </label>
+            <label>Objętość kolby V [dm3]
+              <input id="no2FlaskV" type="text" inputmode="decimal" value="0,100" data-store="no2FlaskV">
+            </label>
+            <label>Objętość próby P1 [cm3]
+              <input id="no2SampleVolume" type="text" inputmode="decimal" value="10" data-store="no2SampleVolume">
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Lp.</th>
+                  <th colspan="2" rowspan="2">Przedmiot analizy</th>
+                  <th rowspan="2">Absorbancja</th>
+                  <th>cNO<sub>2</sub><sup>-</sup></th>
+                  <th rowspan="2">Regresja</th>
+                </tr>
+                <tr><th>mg/dm3</th></tr>
+              </thead>
+              <tbody id="standardsBody"></tbody>
+            </table>
+          </div>
+
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Lp.</th>
+                  <th rowspan="2">Przedmiot analizy</th>
+                  <th rowspan="2">Absorbancja</th>
+                  <th colspan="2">cNO<sub>2</sub><sup>-</sup> [mg/dm3]</th>
+                </tr>
+                <tr>
+                  <th>z krzywej wzorcowej</th>
+                  <th>po uwzgl. rozcieńczenia</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1</td>
+                  <td>Badana próba P1</td>
+                  <td><input id="sampleAbsorbance" type="text" inputmode="decimal" data-store="sampleAbsorbance"></td>
+                  <td class="computed" id="sampleCurveConcentration">-</td>
+                  <td class="computed" id="sampleDilutedConcentration">-</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <section class="chart-panel">
+            <div>
+              <h3>Rys. Stężenie azotanów. Krzywa wzorcowa i płyn badany</h3>
+              <p class="note">Punkty odznaczone w kolumnie "Regresja" pozostają w tabeli, ale nie są użyte do linii trendu.</p>
+            </div>
+            <canvas id="calibrationChart" width="900" height="520" aria-label="Wykres krzywej wzorcowej"></canvas>
+          </section>
+
+          <section class="explanation">
+            <h3>Obliczenia</h3>
+            <div id="exercise3Calculations"></div>
+          </section>
+
+          <section class="explanation">
+            <h3>Interpretacja wyników</h3>
+            <div id="exercise3Interpretation"></div>
+          </section>
+        </section>
+      </section>
+
+      <section class="tab-panel" id="exercise4">
+        <section class="sheet">
+          <table class="report-table identity-table">
+            <tbody>
+              <tr>
+                <th colspan="2">
+                  <label>Ćwiczenie nr 4<br>
+                    <input value="Parametry fizykochemiczne wody - twardość wody" data-store="ex4-title">
+                  </label>
+                </th>
+                <th>
+                  <label>Data:<br>
+                    <input value="11.04.2026" data-store="ex4-date">
+                  </label>
+                </th>
+              </tr>
+              <tr>
+                <th colspan="2">
+                  <div class="inline-fields">
+                    <label>Rok akademicki:<input value="2025/2026" data-store="ex4-year"></label>
+                    <label>Grupa:<input value="1" data-store="ex4-group"></label>
+                    <label>Zespół:<input value="3" data-store="ex4-team"></label>
+                  </div>
+                </th>
+                <th>Zaliczenie:</th>
+              </tr>
+              <tr><th colspan="3">SKŁAD ZESPOŁU BADAWCZEGO:</th></tr>
+              <tr><th>Lp.</th><th>Imię i nazwisko</th><th>Nr albumu</th></tr>
+              <tr><td>1.</td><td><input value="Natalia Kotarska" data-store="ex4-person-1"></td><td><input value="193040" data-store="ex4-album-1"></td></tr>
+              <tr><td>2.</td><td><input value="Jakub Warchoł" data-store="ex4-person-2"></td><td><input value="192981" data-store="ex4-album-2"></td></tr>
+              <tr><td>3.</td><td><input value="Teodor Terpiński" data-store="ex4-person-3"></td><td><input value="192957" data-store="ex4-album-3"></td></tr>
+              <tr><td>4.</td><td><input value="Jakub Podgórski" data-store="ex4-person-4"></td><td><input value="193055" data-store="ex4-album-4"></td></tr>
+            </tbody>
+          </table>
+
+          <h2>Twardość wody</h2>
+          <div class="controls-grid">
+            <label>Stężenie titranta c EDTA [mol/dm3]
+              <input id="edtaConcentration" type="text" inputmode="decimal" value="0,01" data-store="edtaConcentration">
+            </label>
+            <label>Objętość próbki V [cm3]
+              <select id="sampleVolumeHardness" data-store="sampleVolumeHardness">
+                <option value="50">50</option>
+                <option value="20">20</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Lp.</th>
+                  <th rowspan="2">Przedmiot analizy</th>
+                  <th colspan="3">VEDTA [cm3]</th>
+                  <th colspan="3">Twardość</th>
+                </tr>
+                <tr>
+                  <th>pomiar 1</th>
+                  <th>pomiar 2</th>
+                  <th>średnia</th>
+                  <th>mmol/dm3</th>
+                  <th>mgCaCO<sub>3</sub>/dm3</th>
+                  <th>°n</th>
+                </tr>
+              </thead>
+              <tbody id="hardnessBody"></tbody>
+            </table>
+          </div>
+
+          <h2>Zawartość wapnia</h2>
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Lp.</th>
+                  <th rowspan="2">Przedmiot analizy</th>
+                  <th colspan="3">VEDTA [cm3]</th>
+                  <th>CCa<sup>2+</sup></th>
+                </tr>
+                <tr>
+                  <th>pomiar 1</th>
+                  <th>pomiar 2</th>
+                  <th>średnia</th>
+                  <th>mg/dm3</th>
+                </tr>
+              </thead>
+              <tbody id="calciumBody"></tbody>
+            </table>
+          </div>
+
+          <h2>Zawartość magnezu</h2>
+          <div class="table-wrap">
+            <table class="report-table">
+              <thead>
+                <tr>
+                  <th rowspan="2">Lp.</th>
+                  <th rowspan="2">Przedmiot analizy</th>
+                  <th colspan="3">VEDTA [cm3]</th>
+                  <th>CMg<sup>2+</sup></th>
+                </tr>
+                <tr>
+                  <th>pomiar 1</th>
+                  <th>pomiar 2</th>
+                  <th>średnia</th>
+                  <th>mg/dm3</th>
+                </tr>
+              </thead>
+              <tbody id="magnesiumBody"></tbody>
+            </table>
+          </div>
+
+          <section class="explanation">
+            <h3>Obliczenia</h3>
+            <div id="exercise4Calculations"></div>
+          </section>
+
+          <section class="explanation">
+            <h3>Interpretacja wyników</h3>
+            <div id="exercise4Interpretation"></div>
+          </section>
+        </section>
+      </section>
+    </main>
+
+    <script src="app.js"></script>
+  </body>
+</html>
